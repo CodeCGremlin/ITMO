@@ -7,7 +7,7 @@
 - [Программирование](https://github.com/CodeCGremlin/ITMO/tree/main/programming)
 
 ## 2 курс
-- [Программная инженерия]()
+- [Программная инженерия](https://github.com/CodeCGremlin/ITMO/tree/main/Software%20engineering)
 - [Архитектура компьютера](https://github.com/CodeCGremlin/ITMO/tree/main/computer%20architecture)
 - [Математическая статистика](https://github.com/CodeCGremlin/ITMO/tree/main/mathematical%20statistics)
 - [Вычислительная математика](https://github.com/CodeCGremlin/ITMO/tree/main/computational%20mathematics)
