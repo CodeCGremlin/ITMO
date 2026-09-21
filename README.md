@@ -1,7 +1,4 @@
-# ITMO
-ITMO LABS
-
-
+# ITMO LABS
 
 
 ## 1 курс
