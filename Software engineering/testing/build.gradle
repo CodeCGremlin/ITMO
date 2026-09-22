@@ -1,0 +1,95 @@
+plugins {
+    id 'war'
+    id 'java'
+}
+
+group = 'com.coordinate'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Jakarta Servlet API
+    providedCompile 'jakarta.servlet:jakarta.servlet-api:5.0.0'
+
+    // Jakarta Faces (JSF) API
+    providedCompile 'jakarta.faces:jakarta.faces-api:3.0.0'
+
+    // Mojarra Jakarta Faces Implementation
+    implementation 'org.glassfish:jakarta.faces:3.0.3'
+
+    // Jakarta JSTL
+    implementation 'jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api:2.0.0'
+    implementation 'org.glassfish.web:jakarta.servlet.jsp.jstl:2.0.0'
+
+    // PrimeFaces (支持Jakarta)
+    implementation 'org.primefaces:primefaces:13.0.0:jakarta'
+
+    // Jakarta Persistence API
+    implementation 'jakarta.persistence:jakarta.persistence-api:3.0.0'
+
+    // EclipseLink (支持Jakarta)
+    implementation 'org.eclipse.persistence:eclipselink:3.0.3'
+
+    // PostgreSQL Driver
+    implementation 'org.postgresql:postgresql:42.7.7'
+
+    // Jakarta Validation API
+    implementation 'jakarta.validation:jakarta.validation-api:3.0.0'
+    implementation 'org.hibernate.validator:hibernate-validator:7.0.1.Final'
+
+    // Jakarta EL API
+    implementation 'jakarta.el:jakarta.el-api:4.0.0'
+    implementation 'org.glassfish:jakarta.el:4.0.2'
+    implementation 'jakarta.transaction:jakarta.transaction-api:2.0.1'
+
+    implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
+    implementation 'jakarta.enterprise:jakarta.enterprise.cdi-api:4.0.1'
+
+    testImplementation 'junit:junit:4.13.2'
+}
+
+// AR
+war {
+    archiveBaseName = 'lab3'
+    archiveVersion = '1.0'
+}
+
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+//Gradle Wrapper
+wrapper {
+    gradleVersion = '7.6'
+    distributionType = Wrapper.DistributionType.ALL
+}
+
+// ===ЗАВИСИМОСТ ДЛЯ ANT ===
+tasks.register('exportLibsForAnt', Copy) {
+    description = 'Копирует все зависимости (включая тестовые) в lib/'
+    from configurations.runtimeClasspath,
+            configurations.compileClasspath,
+            configurations.testRuntimeClasspath // ← Добавлено!
+    into 'lib'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// ===ОКРУЖЕНИ ДЛЯ ANT ===
+tasks.register('prepareAnt') {
+    dependsOn 'exportLibsForAnt'
+    doLast {
+        println "Dependencies exported to lib/"
+        println "запустить: ant -lib lib build"
+    }
+}
+
+// === WARнастройки===
+war {
+    archiveBaseName = projectName
+    archiveVersion = projectVersion
+    from('src/main/webapp')
+}

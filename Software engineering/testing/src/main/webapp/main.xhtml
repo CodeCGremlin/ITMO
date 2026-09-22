@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:ui="http://java.sun.com/jsf/facelets">
+
+<h:head>
+    <title>Lab3 - Coordinate Check</title>
+    <h:outputStylesheet library="css" name="style.css"/>
+</h:head>
+<h:body>
+
+    <header class="fixed-header">
+        <div class="header-left">Lab#3</div>
+        <div class="header-right">Anton Davidyuk | group: P3210 | variant: 99</div>
+    </header>
+
+    <div class="page-container">
+
+        <div style="display: flex; gap: 30px; margin-top: 20px; flex-wrap: wrap;">
+            <div class="card" style="flex: 1; min-width: 400px;">
+                <h2>INPUT</h2>
+                <h:form id="pointForm">
+
+                    <!-- X Coordinate с обязательной валидацией -->
+                    <div class="form-row">
+                        <div class="form-label">X Coordinate:</div>
+                        <h:selectOneMenu id="xInput" value="#{PointBean.x}"
+                                         styleClass="text-input" required="true"
+                                         requiredMessage="⚠️ Please select X coordinate">
+                            <f:selectItem itemValue="" itemLabel="-- Select X --" noSelectionOption="true"/>
+                            <f:selectItem itemValue="-4" itemLabel="-4" />
+                            <f:selectItem itemValue="-3" itemLabel="-3" />
+                            <f:selectItem itemValue="-2" itemLabel="-2" />
+                            <f:selectItem itemValue="-1" itemLabel="-1" />
+                            <f:selectItem itemValue="0" itemLabel="0" />
+                            <f:selectItem itemValue="1" itemLabel="1" />
+                            <f:selectItem itemValue="2" itemLabel="2" />
+                            <f:selectItem itemValue="3" itemLabel="3" />
+                            <f:selectItem itemValue="4" itemLabel="4" />
+                        </h:selectOneMenu>
+                        <h:message for="xInput" styleClass="error-message"/>
+                    </div>
+
+                    <!-- Y Coordinate с валидацией диапазона -->
+                    <div class="form-row">
+                        <div class="form-label">Y Coordinate:</div>
+                        <h:panelGroup id="yContainer">
+                            <h:inputText id="yInput"
+                                         value="#{PointBean.y}"
+                                         styleClass="text-input"
+                                         required="true"
+                                         requiredMessage="⚠️ Please enter Y coordinate"
+                                         validatorMessage="⚠️ Y must be between -5 and 3"
+                                         converterMessage="⚠️ Y must be a valid number">
+                                <f:validateDoubleRange minimum="-5" maximum="3" />
+                            </h:inputText>
+                            <h:message for="yInput" styleClass="error-message"/>
+                            <span class="hint">Range: [-5, 3]</span>
+                        </h:panelGroup>
+                    </div>
+
+                    <!-- R Radius с обязательной валидацией -->
+                    <div class="form-row">
+                        <div class="form-label">R Radius:</div>
+                        <h:selectOneRadio id="rInput" value="#{PointBean.r}"
+                                          styleClass="custom-checkbox-table"
+                                          required="true"
+                                          requiredMessage="⚠️ Please select R radius">
+                            <f:selectItem itemValue="1.0" itemLabel="1.0" />
+                            <f:selectItem itemValue="1.5" itemLabel="1.5" />
+                            <f:selectItem itemValue="2.0" itemLabel="2.0" />
+                            <f:selectItem itemValue="2.5" itemLabel="2.5" />
+                            <f:selectItem itemValue="3.0" itemLabel="3.0" />
+                            <f:ajax render="areaCanvas" onevent="handleAjaxEvent"/>
+                        </h:selectOneRadio>
+                        <h:message for="rInput" styleClass="error-message"/>
+                    </div>
+
+                    <input type="hidden" id="pointForm:hiddenX" name="hiddenX" value=""/>
+                    <input type="hidden" id="pointForm:hiddenY" name="hiddenY" value=""/>
+
+                    <h:panelGroup id="allPointsContainer" layout="block" style="display:none;">
+                        <ui:repeat value="#{ResultBean.allResults}" var="point">
+                            <div class="point-data"
+                                 data-x="#{point.x}"
+                                 data-y="#{point.y}"
+                                 data-r="#{point.r}"
+                                 data-hit="#{point.hit}"></div>
+                        </ui:repeat>
+                    </h:panelGroup>
+
+                    <!-- Кнопки -->
+                    <div class="button-group" style="text-align: center; margin-top: 40px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <h:commandButton value="CHECK"
+                                         action="#{PointBean.checkPoint}"
+                                         styleClass="btn-primary"
+                                         onclick="return prepareSubmit(false)">
+                            <f:ajax execute="@form"
+                                    render="xInput yContainer rInput areaCanvas historyTable paginationPanel allPointsContainer"
+                                    onevent="handleAjaxEvent"/>
+                        </h:commandButton>
+
+                        <h:commandButton value="CLEAR"
+                                         action="#{ResultBean.clearAll}"
+                                         styleClass="btn-clear">
+                            <f:ajax execute="@this"
+                                    render="historyTable paginationPanel areaCanvas allPointsContainer"
+                                    onevent="handleAjaxEvent"/>
+                        </h:commandButton>
+
+                        <h:commandButton id="canvasBtn" action="#{PointBean.checkPoint}" style="display:none">
+                            <f:ajax execute="hiddenX hiddenY rInput"
+                                    render="historyTable paginationPanel areaCanvas allPointsContainer"
+                                    onevent="handleAjaxEvent"/>
+                        </h:commandButton>
+                    </div>
+                </h:form>
+            </div>
+
+            <div class="card" style="flex: 1; min-width: 400px; text-align: center; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                <h2>GRAPHIK</h2>
+                <canvas id="areaCanvas" width="450" height="450"></canvas>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 30px;">
+            <h2>HISTORY</h2>
+            <div class="history-container">
+                <h:panelGroup id="historyTable">
+                    <table class="result-table">
+                        <thead>
+                        <tr>
+                            <th>TIME</th>
+                            <th>X</th>
+                            <th>Y</th>
+                            <th>R</th>
+                            <th>STATUS</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <ui:repeat value="#{ResultBean.resultsForCurrentPage}" var="res">
+                            <tr class="#{res.hit ? 'row-hit' : 'row-miss'}">
+                                <td>#{res.timestamp}</td>
+                                <td>#{res.x}</td>
+                                <td>#{res.y}</td>
+                                <td>#{res.r}</td>
+                                <td>
+                                    <h:outputText value="HIT" rendered="#{res.hit}" styleClass="result-hit" />
+                                    <h:outputText value="MISS" rendered="#{not res.hit}" styleClass="result-miss" />
+                                </td>
+                            </tr>
+                        </ui:repeat>
+                        <ui:fragment rendered="#{empty ResultBean.resultsForCurrentPage}">
+                            <tr><td colspan="5" class="empty-message">No history available.</td></tr>
+                        </ui:fragment>
+                        </tbody>
+                    </table>
+                </h:panelGroup>
+
+                <!-- Панель пагинации -->
+                <h:panelGroup id="paginationPanel" layout="block" styleClass="pagination-panel"
+                              rendered="#{ResultBean.totalPages > 0}">
+                    <div class="pagination-info">
+                        #{(ResultBean.currentPage - 1) * 10 + 1} -
+                        #{ResultBean.currentPage * 10 gt ResultBean.totalResults ? ResultBean.totalResults : ResultBean.currentPage * 10}
+                        of #{ResultBean.totalResults}
+                    </div>
+
+                    <div class="pagination-controls">
+                        <h:commandButton value="≪ First"
+                                         action="#{ResultBean.firstPage}"
+                                         styleClass="pagination-btn"
+                                         disabled="#{ResultBean.firstPage}">
+                            <f:ajax render="historyTable paginationPanel allPointsContainer" onevent="handleAjaxEvent"/>
+                        </h:commandButton>
+
+                        <h:commandButton value="❮ Previous"
+                                         action="#{ResultBean.previousPage}"
+                                         styleClass="pagination-btn"
+                                         disabled="#{ResultBean.firstPage}">
+                            <f:ajax render="historyTable paginationPanel allPointsContainer" onevent="handleAjaxEvent"/>
+                        </h:commandButton>
+
+                        <div class="pagination-pages">
+                            <ui:repeat value="#{ResultBean.pageNumbersToShow}" var="pageNum">
+                                <h:panelGroup rendered="#{pageNum eq -1}">
+                                    <span class="pagination-ellipsis">...</span>
+                                </h:panelGroup>
+
+                                <h:panelGroup rendered="#{pageNum ne -1}">
+                                    <h:commandButton value="#{pageNum}"
+                                                     action="#{ResultBean.goToPage(pageNum)}"
+                                                     styleClass="#{pageNum eq ResultBean.currentPage ? 'pagination-page-active' : 'pagination-page'}">
+                                        <f:ajax render="historyTable paginationPanel allPointsContainer" onevent="handleAjaxEvent"/>
+                                    </h:commandButton>
+                                </h:panelGroup>
+                            </ui:repeat>
+                        </div>
+
+                        <h:commandButton value="Next ❯"
+                                         action="#{ResultBean.nextPage}"
+                                         styleClass="pagination-btn"
+                                         disabled="#{ResultBean.lastPage}">
+                            <f:ajax render="historyTable paginationPanel allPointsContainer" onevent="handleAjaxEvent"/>
+                        </h:commandButton>
+
+                        <h:commandButton value="Last ≫"
+                                         action="#{ResultBean.lastPage}"
+                                         styleClass="pagination-btn"
+                                         disabled="#{ResultBean.lastPage}">
+                            <f:ajax render="historyTable paginationPanel allPointsContainer" onevent="handleAjaxEvent"/>
+                        </h:commandButton>
+                    </div>
+                </h:panelGroup>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <h:link outcome="index" styleClass="btn-back" value="BACK"/>
+        </div>
+    </div>
+
+    <h:outputScript library="js" name="main.js" />
+</h:body>
+</html>

@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="lab3" default="build" basedir=".">
+
+    <property file="config/build.properties"/>
+    <property file="gradle.properties"/>
+
+    <tstamp>
+        <format property="build.timestamp" pattern="yyyy-MM-dd HH:mm:ss"/>
+    </tstamp>
+
+    <path id="compile.classpath">
+        <fileset dir="${lib.dir}" includes="**/*.jar"/>
+    </path>
+
+    <path id="test.classpath">
+        <path refid="compile.classpath"/>
+        <pathelement location="${classes.dir}"/>
+        <fileset dir="${lib.dir}">
+            <include name="junit-*.jar"/>
+            <include name="hamcrest-core-*.jar"/>
+        </fileset>
+    </path>
+
+    <!-- ===Задачи=== -->
+
+    <target name="clean" description="Удаление скомпил части проекта">
+        <echo message="Cleaning ${build.dir}..."/>
+        <delete dir="${build.dir}"/>
+        <mkdir dir="${classes.dir}"/>
+        <mkdir dir="${dist.dir}"/>
+        <mkdir dir="${test.reports.dir}"/>
+        <echo message="Clean done"/>
+    </target>
+
+
+
+    <target name="compile" depends="clean" description="Компиляция">
+        <echo message="Compiling ${src.dir} to ${classes.dir}"/>
+
+        <javac srcdir="${src.dir}"
+               destdir="${classes.dir}"
+               source="${java.source}"
+               target="${java.target}"
+               encoding="${encoding}"
+               includeantruntime="false"
+               debug="true"
+               failonerror="true">
+            <classpath refid="compile.classpath"/>
+            <compilerarg value="-Xlint:unchecked"/>
+        </javac>
+
+
+        <copy todir="${classes.dir}">
+            <fileset dir="${resources.dir}" excludes="**/*.java"/>
+        </copy>
+
+        <echo message="Compilation successful"/>
+    </target>
+
+
+
+
+    <target name="build" depends="compile" description="Компиляция и упаковка в исполняемый JAR">
+        <echo message="Building JAR: ${dist.dir}/${jar.file}"/>
+
+        <!-- MANIFEST.MF -->
+        <manifest file="${build.dir}/MANIFEST.MF">
+            <attribute name="Manifest-Version" value="1.0"/>
+            <attribute name="Implementation-Title" value="${project.name}"/>
+            <attribute name="Implementation-Version" value="${project.version}"/>
+            <attribute name="Main-Class" value="${main.class}"/>
+            <attribute name="Built-By" value="${user.name}"/>
+            <attribute name="Created-By" value="Apache Ant ${ant.version}"/>
+            <attribute name="Build-Timestamp" value="${build.timestamp}"/>
+        </manifest>
+
+        <!--  JAR -->
+        <jar destfile="${dist.dir}/${jar.file}"
+             basedir="${classes.dir}"
+             manifest="${build.dir}/MANIFEST.MF">
+            <fileset dir="${resources.dir}" excludes="**/*.java"/>
+        </jar>
+
+        <echo message="JAR created: ${dist.dir}/${jar.file}"/>
+    </target>
+
+
+
+    <target name="test" depends="build" description="Запуск JUnit-тестов (после сборки)">
+        <echo message="Running tests..."/>
+
+        <!-- Компиляция тестовых классов -->
+        <mkdir dir="${test.classes.dir}"/>
+        <javac srcdir="${test.src.dir}"
+               destdir="${test.classes.dir}"
+               source="${java.source}"
+               target="${java.target}"
+               encoding="${encoding}"
+               includeantruntime="false">
+            <classpath refid="test.classpath"/>
+        </javac>
+
+        <!-- Выполнение тестов -->
+        <junit printsummary="yes" haltonfailure="no" fork="true" failureproperty="test.failed">
+            <classpath>
+                <path refid="test.classpath"/>
+                <pathelement location="${test.classes.dir}"/>
+                <pathelement location="${classes.dir}"/>
+            </classpath>
+
+            <formatter type="plain" usefile="false"/>
+            <formatter type="xml"/>
+
+            <batchtest todir="${test.reports.dir}">
+                <fileset dir="${test.src.dir}">
+                    <include name="**/*Test.java"/>
+                </fileset>
+            </batchtest>
+        </junit>
+
+        <!-- отчёт -->
+        <junitreport todir="${test.reports.dir}">
+            <fileset dir="${test.reports.dir}">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report format="frames" todir="${test.reports.dir}/html"/>
+        </junitreport>
+
+        <fail message="Tests failed!" if="test.failed"/>
+        <echo message="All tests passed. Reports: ${test.reports.dir}/html"/>
+    </target>
+
+
+
+    <target name="doc" depends="build" description="Добавление контрольных сумм и Javadoc в архив">
+        <echo message="Generating documentation and checksums..."/>
+        <mkdir dir="${javadoc.dir}"/>
+
+        <!-- Расчёт MD5 и SHA1  -->
+        <checksum algorithm="MD5" fileext=".md5">
+            <fileset dir="${src.dir}" includes="**/*.java"/>
+        </checksum>
+        <checksum algorithm="SHA-1" fileext=".sha1">
+            <fileset dir="${src.dir}" includes="**/*.java"/>
+        </checksum>
+
+        <concat destfile="${build.dir}/checksums.txt">
+            <fileset dir="${src.dir}" includes="**/*.md5,**/*.sha1"/>
+        </concat>
+
+        <!-- Javadoc -->
+        <javadoc sourcepath="${src.dir}" destdir="${javadoc.dir}" packagenames="org.coordinate.*"
+                 charset="UTF-8" encoding="UTF-8" windowtitle="Lab3 API Documentation"
+                 use="true" version="true" author="true">
+            <classpath refid="compile.classpath"/>
+        </javadoc>
+
+        <!-- Обновление MANIFEST.MF  -->
+        <manifest file="${build.dir}/MANIFEST.MF" mode="update">
+            <attribute name="Source-Checksums" value="See META-INF/checksums.txt"/>
+            <attribute name="Javadoc-Included" value="true"/>
+            <attribute name="Javadoc-Location" value="META-INF/javadoc/"/>
+        </manifest>
+
+        <!-- Перепаковка JAR  -->
+        <jar destfile="${dist.dir}/${jar.file}" basedir="${classes.dir}"
+             manifest="${build.dir}/MANIFEST.MF" update="true">
+            <zipfileset dir="${javadoc.dir}" prefix="META-INF/javadoc"/>
+            <zipfileset file="${build.dir}/checksums.txt" fullpath="META-INF/checksums.txt"/>
+        </jar>
+
+        <!-- Удаление временных файлов контрольных сумм -->
+        <delete>
+            <fileset dir="${src.dir}" includes="**/*.md5,**/*.sha1"/>
+            <file file="${build.dir}/checksums.txt"/>
+        </delete>
+        <echo message="Documentation added. Final JAR: ${dist.dir}/${jar.file}"/>
+    </target>
+
+
+
+    <target name="team" description="Получение 3 предыдущих ревизий из SVN, сборка и упаковка в ZIP">
+        <echo message="Starting TEAM target: SVN revisions build"/>
+
+        <mkdir dir="${team.dir}"/>
+        <mkdir dir="${team.dir}/jars"/>
+
+        <!-- Определение текущей ревизии  -->
+        <exec executable="svn" outputproperty="svn.current.rev" failonerror="true">
+            <arg line="info --show-item revision ${svn.repo.url}"/>
+        </exec>
+        <echo message="Current SVN revision: ${svn.current.rev}"/>
+
+        <!-- обработка трёх предыдущих ревизий -->
+        <antcall target="team.svn.rev">
+            <param name="offset" value="1"/>
+            <param name="base.rev" value="${svn.current.rev}"/>
+        </antcall>
+        <antcall target="team.svn.rev">
+            <param name="offset" value="2"/>
+            <param name="base.rev" value="${svn.current.rev}"/>
+        </antcall>
+        <antcall target="team.svn.rev">
+            <param name="offset" value="3"/>
+            <param name="base.rev" value="${svn.current.rev}"/>
+        </antcall>
+
+        <!-- Упаковка в ZIP-архив -->
+        <zip destfile="${dist.dir}/${team.zip.file}" basedir="${team.dir}/jars">
+            <zipfileset file="${dist.dir}/${jar.file}" prefix="current-build"/>
+        </zip>
+
+        <!-- Очистка временных директорий  -->
+        <delete dir="${team.dir}"/>
+        <echo message="TEAM target completed. Archive: ${dist.dir}/${team.zip.file}"/>
+    </target>
+
+
+
+    <target name="team.svn.rev">
+        <!-- Вычисление номера ревизии -->
+        <exec executable="powershell" outputproperty="actual.rev" failonerror="false">
+            <arg line="-Command &quot;${base.rev} - ${offset}&quot;"/>
+        </exec>
+
+        <!-- Проверка номера ревизии -->
+        <condition property="rev.valid">
+            <and>
+                <not><equals arg1="${actual.rev}" arg2=""/></not>
+                <not><equals arg1="${actual.rev}" arg2="0"/></not>
+                <not><matches pattern="^-" string="${actual.rev}"/></not>
+            </and>
+        </condition>
+
+        <antcall target="team.svn.rev.build"/>
+    </target>
+
+    <!-- Сборка ревизии -->
+    <target name="team.svn.rev.build" if="rev.valid">
+        <echo message="Building revision #${actual.rev}..."/>
+
+        <property name="rev.work.dir" value="${team.dir}/rev-${actual.rev}"/>
+        <property name="rev.classes.dir" value="${rev.work.dir}/classes"/>
+        <property name="rev.dist.dir" value="${rev.work.dir}/dist"/>
+
+        <mkdir dir="${rev.work.dir}"/>
+        <mkdir dir="${rev.classes.dir}"/>
+        <mkdir dir="${rev.dist.dir}"/>
+
+        <exec executable="svn" failonerror="true">
+            <arg value="checkout"/>
+            <arg value="-r"/>
+            <arg value="${actual.rev}"/>
+            <arg value="${svn.repo.url}"/>
+            <arg value="${rev.work.dir}"/>
+        </exec>
+
+        <echo message="Compiling revision #${actual.rev}..."/>
+        <javac srcdir="${rev.work.dir}/src/main/java"
+               destdir="${rev.classes.dir}"
+               source="${java.source}"
+               target="${java.target}"
+               encoding="${encoding}"
+               includeantruntime="false"
+               failonerror="false">
+            <classpath refid="compile.classpath"/>
+        </javac>
+
+        <!-- Копирование конф файлов -->
+        <copy todir="${rev.classes.dir}" failonerror="false">
+            <fileset dir="${rev.work.dir}/src/main/resources" excludes="**/*.java"/>
+        </copy>
+
+        <!-- Упаковка классов в JAR -->
+        <echo message="Packaging revision #${actual.rev}..."/>
+        <jar destfile="${rev.dist.dir}/lab3-rev${actual.rev}.jar"
+             basedir="${rev.classes.dir}">
+            <manifest>
+                <attribute name="Implementation-Title" value="${project.name}"/>
+                <attribute name="Implementation-Version" value="0.${actual.rev}"/>
+                <attribute name="Main-Class" value="${main.class}"/>
+            </manifest>
+        </jar>
+
+
+        <copy todir="${team.dir}/jars">
+            <fileset dir="${rev.dist.dir}" includes="*.jar"/>
+        </copy>
+
+        <echo message="Revision #${actual.rev} completed"/>
+    </target>
+
+</project>
