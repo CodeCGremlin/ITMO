@@ -13,7 +13,7 @@
 - [Вычислительная математика](https://github.com/CodeCGremlin/ITMO/tree/main/computational%20mathematics)
 - [Методы оптимизации](https://github.com/CodeCGremlin/ITMO/tree/main/optimization%20methods)
 - [Алгоритмы](https://github.com/CodeCGremlin/ITMO/tree/main/algorithms)
-- [Веб]([https://github.com/CodeCGremlin/WEB](https://github.com/CodeCGremlin/ITMO/tree/main/Web))
+- [Веб](https://github.com/CodeCGremlin/ITMO/tree/main/Web)
 
 ## 3 курс ( в процессе )
 - [Операционные системы](https://github.com/CodeCGremlin/ITMO/tree/main/operating%20systems)
