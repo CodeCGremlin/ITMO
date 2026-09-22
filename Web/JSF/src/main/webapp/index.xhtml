@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+>
+
+<h:head>
+    <title>Start Page - CPC System</title>
+    <h:outputStylesheet library="css" name="style.css"/>
+    <script>
+        function refreshClock() {
+            let f = document.getElementById("clockForm");
+            if (f) {
+                f.submit();
+            }
+        }
+        setInterval(refreshClock, 9000);
+    </script>
+</h:head>
+
+<h:body>
+    <header class="fixed-header">
+        <div class="header-left">VebLab №3</div>
+        <div class="header-right">Anton Davidyul | group: P3210 | variant: 99</div>
+    </header>
+
+    <div class="page-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 70vh;">
+
+        <div class="card" style="width: 100%; max-width: 600px; text-align: center; padding: 50px;">
+            <p class="intro-text">LABA 3</p>
+
+            <h:form id="clockForm">
+                <div style="text-align:center;">
+                    <span style="color: #888; font-size: 0.9em;">TIME</span>
+                    <span class="clock-text">#{ClockBean.currentDateTime}</span>
+                </div>
+            </h:form>
+
+            <h:form style="margin-top: 40px;">
+                <h:commandLink value="START"
+                               action="main?faces-redirect=true"
+                               styleClass="btn-primary"/>
+            </h:form>
+        </div>
+
+    </div>
+
+</h:body>
+</html>

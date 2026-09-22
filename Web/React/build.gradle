@@ -1,0 +1,48 @@
+plugins {
+    id 'war'
+    id 'java'
+}
+
+group = 'org.coordinate'
+version = '1.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Jakarta EE API (provided by WildFly at runtime)
+    compileOnly 'jakarta.platform:jakarta.jakartaee-api:10.0.0'
+
+    // ✅ CORRECT: RESTEasy JAX-RS Implementation
+    compileOnly 'org.jboss.resteasy:resteasy-jaxrs:3.15.6.Final'
+
+    // Hibernate for JPA
+    compileOnly 'org.hibernate:hibernate-core:6.2.0.Final'
+
+    // PostgreSQL driver
+    runtimeOnly 'org.postgresql:postgresql:42.7.0'
+}
+war {
+    archiveFileName = 'lab3.war' // Имя должно совпадать с тем, что ждет WildFly
+    from 'src/main/webapp'
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+}
+
+// Создайте структуру webapp
+task createWebappStructure {
+    doLast {
+        mkdir "$projectDir/src/main/webapp/WEB-INF"
+    }
+}
+
+// Зависимость компиляции от создания структуры
+compileJava.dependsOn createWebappStructure
