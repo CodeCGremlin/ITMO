@@ -1,6 +1,12 @@
 #include "keyboard.h"
 
-void initKeyboard() {
+static char rawKey = '\0';   // предыдущее считанное значение (для антидребезга)
+
+void initKeyboard(void) {
+  // Сначала отпускаем строки (высокий уровень), потом делаем их выходами
+  GPIOB->BSRR = (1U << 7) | (1U << 6) | (1U << 3);
+  GPIOA->BSRR = (1U << 10);
+
   // Настройка строк (R1-R4) как выходы с открытым стоком
   // PB7, PB6, PB3, PA10
   GPIOB->MODER = (GPIOB->MODER & ~(3U << (7 * 2))) | (1U << (7 * 2));
@@ -19,10 +25,11 @@ void initKeyboard() {
   GPIOB->PUPDR = (GPIOB->PUPDR & ~(3U << (5 * 2))) | (1U << (5 * 2));
 
   lastKey = '\0';
+  rawKey = '\0';
   lastScanTime = 0;
 }
 
-char readKey() {
+char readKey(void) {
   const uint8_t rows[] = {7, 6, 10, 3};    // Пины строк
   const uint8_t cols[] = {10, 4, 5};       // Пины столбцов
   const char keymap[4][3] = {
@@ -35,9 +42,9 @@ char readKey() {
   for (uint8_t i = 0; i < 4; i++) {
     // Активируем текущую строку
     if (rows[i] != 10) {
-      GPIOB->BSRR = (1 << (rows[i] + 16));
+      GPIOB->BSRR = (1U << (rows[i] + 16));
     } else {
-      GPIOA->BSRR = (1 << (rows[i] + 16));
+      GPIOA->BSRR = (1U << (rows[i] + 16));
     }
 
     // Небольшая задержка для стабилизации
@@ -45,12 +52,12 @@ char readKey() {
 
     // Проверяем столбцы
     for (uint8_t j = 0; j < 3; j++) {
-      if ((GPIOB->IDR & (1 << cols[j])) == 0) {
+      if ((GPIOB->IDR & (1U << cols[j])) == 0) {
         // Деактивируем строку перед возвратом
         if (rows[i] != 10) {
-          GPIOB->BSRR = (1 << rows[i]);
+          GPIOB->BSRR = (1U << rows[i]);
         } else {
-          GPIOA->BSRR = (1 << rows[i]);
+          GPIOA->BSRR = (1U << rows[i]);
         }
         return keymap[i][j];
       }
@@ -58,26 +65,34 @@ char readKey() {
 
     // Деактивируем строку
     if (rows[i] != 10) {
-      GPIOB->BSRR = (1 << rows[i]);
+      GPIOB->BSRR = (1U << rows[i]);
     } else {
-      GPIOA->BSRR = (1 << rows[i]);
+      GPIOA->BSRR = (1U << rows[i]);
     }
   }
 
   return '\0';
 }
 
-void scanKeyboard() {
-  // Сканируем клавиатуру каждые 100мс
-  if (tickCount - lastScanTime > 100) {
-    lastScanTime = tickCount;
-    char currentKey = readKey();
+char scanKeyboard(void) {
+  // Опрос раз в KEY_SCAN_PERIOD_MS
+  if ((uint32_t)(tickCount - lastScanTime) < KEY_SCAN_PERIOD_MS) {
+    return '\0';
+  }
+  lastScanTime = tickCount;
 
-    if (currentKey != '\0' && currentKey != lastKey) {
+  char currentKey = readKey();
+  char result = '\0';
+
+  // Антидребезг: значение должно совпасть в двух опросах подряд
+  if (currentKey == rawKey && currentKey != lastKey) {
+    lastKey = currentKey;
+    if (currentKey != '\0') {
       printf("Pressed: %c\n", currentKey);
-      lastKey = currentKey;
-    } else if (currentKey == '\0') {
-      lastKey = '\0';
+      result = currentKey;   // событие нажатия - один раз
     }
   }
+
+  rawKey = currentKey;
+  return result;
 }
