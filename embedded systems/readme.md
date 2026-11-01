@@ -5,8 +5,8 @@ https://wokwi.com/projects/476577309783793665
 
 
 # Л2
-Таймер на микроконтроллере STM32F4
+[Таймер на микроконтроллере STM32F4](https://github.com/CodeCGremlin/ITMO/tree/main/embedded%20systems/l2)
 
 
 # Л3
-Тетрис на STM32F407 под управлением FreeRTOS
+[Тетрис на STM32F407 под управлением FreeRTOS](https://github.com/CodeCGremlin/ITMO/tree/main/embedded%20systems/l3)
